@@ -1,0 +1,446 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Social Computing/Social Gaming - Summer 2021\n",
+    "\n",
+    "# Exercise Sheet 2: A comparison of Centrality Measures\n",
+    "Centrality is a key concept in social network analysis. It measures the importance or influence of a certain node/edge in a network. The interpretation of importance or influence, however, depends on the type of centrality and the application. Different types of centrality were discussed in the lecture: degree centrality, closeness centrality, betweenness centrality and eigenvector centrality.<br>\n",
+    "In this exercise, you are going to implement different centrality algorithms using the NetworkX library which you already know from last exercise. Please consult the [reference](https://networkx.github.io/documentation/stable/reference/index.html) [1] and the [tutorial](https://networkx.github.io/documentation/stable/tutorial.html) [2]."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# import the libraries\n",
+    "import networkx as nx, pandas as pd, matplotlib.pyplot as plt"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Task 2.1: The Krackhardt Kite Graph\n",
+    "We will use the Krackhardt Kite for the first exercise. The Krackhardt Kite is a simply connected, unweighted, and undirected graph. [This figure](https://en.wikipedia.org/wiki/Krackhardt_kite_graph#/media/File:Krackhard_kite.PNG) [3] illustrates the Krackhardt Kite.\n",
+    "\n",
+    "**Calculate and print the degree centrality of the Krackhardt Kite graph - just a list of ten values, one for each node. You can use the pre-defined function of the NetworkX library.**\n",
+    "\n",
+    "**Optional:** Look at the graph and the list with the degree centrality values. Can you identify which node has which degree centrality?<br>\n",
+    "**Optional:** Calculate the closeness and betweeness centrality as well using the library. What information do they give us compared to degree centrality?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Importing the graph (connected, unweighted, undirected social network)\n",
+    "krackhardt_kite = nx.krackhardt_kite_graph()\n",
+    "\n",
+    "# Formatting the graph\n",
+    "nodeColor = \"green\"\n",
+    "nodeSize = 400\n",
+    "pos = nx.spring_layout(krackhardt_kite)\n",
+    "\n",
+    "# TODO: Calculate and print the Kite's degree centrality\n",
+    "\n",
+    "\n",
+    "# Optional: Calculate the closeness centrality\n",
+    "\n",
+    "\n",
+    "# Optional: Calculate the betweeness centrality\n",
+    "\n",
+    "\n",
+    "# TODO: Plot the graph. In the following, use draw_networkx instead of draw!\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Task 2.2: Betweenness Centrality\n",
+    "\n",
+    "(shortest Path) Betweenness Centrality measures centrality based on shortest paths. For every pair of vertices in a graph, there exists a shortest path between the vertices such that either the number of edges that the path passes through (for undirected graphs) or the sum of the weights of the edges (for directed graphs) is minimized.<br>\n",
+    "Vertices with high betweenness may have considerable influence within a network by virtue of their control over information passing between others.\n",
+    "\n",
+    "**a)**\n",
+    "**Write a Python program that computes the betweeness centrality for each node for the given university social network.** The output should be a list where each item contains the value of the betweenness centrality of a node. You are **not allowed** to use the pre-defined function `betweenness_centrality()` from NetworkX , but you can look up its [documentation](https://networkx.org/documentation/networkx-1.10/reference/generated/networkx.algorithms.centrality.betweenness_centrality.html) [4] for help or use it for comparison.\n",
+    "\n",
+    "**Notes:**\n",
+    "* The program only have to implement the undirected graph version (without edge weights)\n",
+    "* Look up the mathematical expression in the documentation\n",
+    "* Normalize your centrality values\n",
+    "* You are allowed to use pre-defined functions from NetworkX for determining (shortest) paths"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# TODO: Calculate and print the betweenness centrality\n",
+    "def betweenness_centrality(g):\n",
+    "    \n",
+    "\n",
+    "# Calculate and print betweenness centrality\n",
+    "bc = betweenness_centrality(krackhardt_kite)\n",
+    "nx_bc = nx.betweenness_centrality(krackhardt_kite)\n",
+    "\n",
+    "for key in nx_bc.keys():\n",
+    "    print(\"%.3f %.3f\" %(bc[key], nx_bc[key]))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now you have implemented Betweenness Centrality, copy your solution and try to change your code in the following way:\n",
+    "\n",
+    "\n",
+    "**b)**\n",
+    "**Write a Python program that computes the Epsilon-Betweeness-Centrality for each node for the given social network. Definition of Epsilon-Betweeness-Centrality: if a path is longer by $\\epsilon$ than the shortest path, it is still considered a valid path for the computation of the betweenness centrality of a node**\n",
+    "\n",
+    "**Notes:**\n",
+    "* All notes from above still apply\n",
+    "* This time only shortest paths are not sufficient to compute the centrality, maybe NetworkX can help you once more?\n",
+    "* Consider only $\\epsilon$-longer paths that do not contain the same node more than once"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# TODO: Calculate and print the betweenness centrality with epsilon\n",
+    "# Hint: You can use your code from above and modify it accordingly\n",
+    "def betweenness_centrality_epsilon(g, epsilon):\n",
+    "\n",
+    "\n",
+    "# Calculate and print betweenness centrality\n",
+    "epsilon = 1\n",
+    "bc_epsilon = betweenness_centrality_epsilon(krackhardt_kite, epsilon)\n",
+    "for val in bc_epsilon:\n",
+    "    print(\"%.3f\" %(val))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**c)** Compare your different results from a) and b). Pick 2 nodes and explain why their values differ. What advantages and disadvantages does one approach have over the other?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**TODO: Describe your observations in 3-5 sentences**"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Task 2.3: PageRank\n",
+    "\n",
+    "This task is about **PageRank centrality**. It is a feedback-centrality named after Larry Page, who together with Sergei Brin founded Google. The PageRank algorithm was used in Google's search engine to rank the pages for the search result. Since 2013, PageRank was superseded by the Hummingbird algorithm although PageRank remains one of many ingredients in the Hummingbird algorithm. Its basic idea is that a node is more central the more central its neighbors are. In order to understand PageRank, the concept of a random walk is required.\n",
+    "\n",
+    "The **random walk** model describes a user surfing the web, starting at a web page and randomly following one of its hyperlinks to other web pages. If there is no link to other pages, the surfer jumps to a random web page.\n",
+    "\n",
+    "The PageRank measures a stationary distribution of a specific kind of random walk that starts from a random vertex, jumps to a random vertex with a predefined probability $1-d$, and with a probability $d$ follows a random outgoing edge of the current vertex."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**a)** First create a graph and test out the pre-defined NetworkX PageRank function.\n",
+    "\n",
+    "**1. Create** a graph using ``erdos_renyi_graph`` function of NetworkX."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# TODO: Create a graph using Erdos_Renyi with the following parameters\n",
+    "n = 20\n",
+    "p = 0.07\n",
+    "directed = True\n",
+    "\n",
+    "simple_graph = # TODO\n",
+    "\n",
+    "# Formatting the graph\n",
+    "node_color = \"#F900A5\"\n",
+    "edge_colors= \"#000000\"\n",
+    "node_size = 500\n",
+    "\n",
+    "pos = nx.spring_layout(simple_graph, k=0.7, iterations=20)\n",
+    "\n",
+    "nx.draw_networkx(simple_graph, pos=pos, node_color=node_color, node_size=node_size, edgecolors=edge_colors, with_labels=True)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**2.** **Calculate the PageRank** values of our `simple_graph`, using the built-in function of NetworkX.\n",
+    "\n",
+    "**3. Print** the first 20 elements of the PageRank."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# use this values for the built-in function\n",
+    "ITERATIONS = 100\n",
+    "DAMPING = 0.85\n",
+    "\n",
+    "\n",
+    "# TODO: calculate PageRank\n",
+    "\n",
+    "# TODO: print the results"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**b)** Create a simple PageRank function using **Jacobi power iteration**, which you can find in the lecture slides. To avoid matrix inversion we use an iterative formula for the PageRank algorithm:\n",
+    "\n",
+    "$$c_i^{(k+1)} = d \\cdot \\sum_{j} P_{ij}c_{j}^{(k)} + \\frac{(1 - d)}{N}$$\n",
+    "\n",
+    "where the superscript k denotes the iteration index, d the damping, N the number of nodes in our graph (which is left out in the lecture notes and also in the original papers, but is used in the built-in PageRank calculation algorithm of NetworkX).\n",
+    "\n",
+    "**1.** Your first task is to **implement a function** which calculates the transition matrix element $P_{ij}$.\n",
+    "\n",
+    "**Note:** If the out-degree of a node is 0, the user should make a \"random jump\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# TODO: calculate the transition matrix element P_ij of a node j to a node i.\n",
+    "def pij(g, i, j):\n",
+    "    '''\n",
+    "    calculate transition matrix element \n",
+    "    between node i and node j of graph g \n",
+    "    '''\n",
+    "    # TODO: implement the function\n",
+    "    \n",
+    "    "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**2.** The second task is to **normalize** a list, so that `sum(list) = 1.0` after every iteration in the Jacobi power iteration algorithm."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# TODO: renormalize after every step\n",
+    "def renormalize(pagerank_list):\n",
+    "    '''\n",
+    "    input arbitrary float number list\n",
+    "    return a list where of all elements (sum(list)) equals 1.0\n",
+    "    '''\n",
+    "    # TODO: implement the function\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**3.** The third and last task is to **implement the PageRank** calculation using Jacobi power iteration yourself. **Print** the first 20 elements and make sure you have the same result as in task ***a)***.\n",
+    "\n",
+    "**Note:**\n",
+    "- `summe_j` is the term $\\sum_j P_{ij}c_{j}^{k}$ in the formula"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def calcPageRank(g, d, numIter=30):\n",
+    "    '''\n",
+    "    calculate the PageRank of a given graph g, with damping d, \n",
+    "    number of iterations numIter using jacobi power iteration\n",
+    "    return a list with pageranks.\n",
+    "    '''\n",
+    "    # first initialize our pagerank centrality list c \n",
+    "    # with 1/N for each element\n",
+    "    c = # TODO\n",
+    "    \n",
+    "    for iteration in range(0, numIter):\n",
+    "        \n",
+    "        c_previous = c.copy() \n",
+    "\n",
+    "        for i in g.nodes:\n",
+    "            summe_j = 0.0\n",
+    "            \n",
+    "            for j in g.nodes: # for neighbors of i\n",
+    "                # calculate the sum term\n",
+    "                summe_j += # TODO\n",
+    "            \n",
+    "            # calculate the centrality for the index i\n",
+    "            # using the complete formula   \n",
+    "            c[i.index] = # TODO\n",
+    "        \n",
+    "        # renormalize pageranks after every iteration\n",
+    "        c = # TODO\n",
+    "            \n",
+    "    return c\n",
+    "\n",
+    "my_pagerank_list = calcPageRank(simple_graph, DAMPING, ITERATIONS)\n",
+    "pagerank_dict = nx.pagerank(simple_graph, alpha=DAMPING, max_iter=ITERATIONS)\n",
+    "\n",
+    "for key in # TODO: print the first 20 elements\n",
+    "    print(\"%.6f %.6f\" %( pagerank_dict[key], my_pagerank_list[key]))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**c) Personalized PageRank**\n",
+    "\n",
+    "Now that you have calculated the PageRank centrality you will enhance the PageRank calculation to the Personalized PageRank. \n",
+    "\n",
+    "Personalized PageRank is a modification of the PageRank algorithm. It is basically the same but biased to a personalized set of the starting vertices, a so-called `personalization` or preferences vector of the user.\n",
+    "\n",
+    "Instead of jumping to a random vertex with probability $d$, the walker jumps to a random vertex from the set of the starting vertices. By varying the damping factor $d$ the algorithm can be adjusted either towards the structure of the network itself, by using a close to 1 value of $d$, or towards the personal preferences by making $d$ smaller. Personalized PageRank can be used for personalized recommendations."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Copy and modify the ``calcPageRank()`` function, in order to include personal preferences. You have to modify the starting vector and the formula slightly. In addition to that `pij()` must be corrected for the personal jump too, define `pij_pers()` in order for your personalized PageRank to work!**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# TODO calculate the transition matrix element P_ij of a node j to a node i.\n",
+    "def pij_pers(g, i, j, c_start):\n",
+    "    '''\n",
+    "    calculate transition matrix element \n",
+    "    between node i and node j of graph g \n",
+    "    '''\n",
+    "    # TODO: implement the function\n",
+    "\n",
+    "    "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def personalizedPageRank(g, d, personalization, numIter=30):\n",
+    "    '''\n",
+    "    calculate the personalized pagerank of a given graph g, with damping d, \n",
+    "    number of iterations numIter using jacobi power iteration\n",
+    "    return a list with pageranks.\n",
+    "    \n",
+    "    personalization is the personalization dictionary of nodes, with \n",
+    "    the probability 1, if node is personal preference of a user, \n",
+    "    0, if not. E.g. {0:1, 1:1, 2:0, 3:1, 4:0, 5:0}, for prefered pages 1 and 3.\n",
+    "    '''\n",
+    "    # first initialise our PageRank centrality list c \n",
+    "    # with 1/\"number of non zero entries in personalization dictionary\" \n",
+    "    # for each prefered page\n",
+    "    # Note: the initial centrality list c_start is also needed for your pij_pers() function\n",
+    "\n",
+    "    # TODO: Implement personalized PageRank\n",
+    "\n",
+    "    \n",
+    "personalization_vector = {1:0, 2:1, 3:1, 4:1, 5:0, 6:1}\n",
+    "\n",
+    "my_personalized_pagerank = personalizedPageRank(simple_graph, DAMPING, personalization_vector, ITERATIONS)\n",
+    "personalized_pagerank = nx.pagerank(simple_graph, alpha=DAMPING, personalization=personalization_vector, max_iter=ITERATIONS)\n",
+    "\n",
+    "for key in # TODO: print the first 20 elements\n",
+    "    print(\"%.6f %.6f\" %( personalized_pagerank[key], my_personalized_pagerank[key]))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**d)** Describe in 3-4 sentences what happens if you modify the starting vector or the damping factor? How does it influence your recommendation?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**TODO: Describe your observations in 3-4 sentences**"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## References\n",
+    "\n",
+    "[1] https://networkx.github.io/documentation/stable/reference/index.html\n",
+    "<br>[2] https://networkx.github.io/documentation/stable/tutorial.html\n",
+    "<br>[3] https://en.wikipedia.org/wiki/Krackhardt_kite_graph#/media/File:Krackhard_kite.PNG\n",
+    "<br>[4] https://networkx.org/documentation/networkx-1.10/reference/generated/networkx.algorithms.centrality.betweenness_centrality.html"
+   ]
+  }
+ ],
+ "metadata": {
+  "anaconda-cloud": {},
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 1
+}
