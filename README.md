@@ -1,10 +1,11 @@
 # Social Computing
 
-Twitch Streamers' Friends Network.
+Throughout this project a graph of twitch streamers' friends network is constructed and analyzed. Additionally, a comparison of centrality measures is performed, including the `Krackhardt Kite Graph`, `Betweenness Centrality`, and `PageRank`.
 
 ## Outline
 
 - Twitch Streamers' Friends Network
+- A Comparison of Centrality Measures
 
 ## Twitch Streamers' Friends Network
 
@@ -45,3 +46,5 @@ informations about the channel
 
 ![spring layout](/ex01/kamada_kawai_layout.png)
 <center>Kamada Kawai Layout</center>
+
+## A Comparison of Centrality Measures
