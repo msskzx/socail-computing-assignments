@@ -1,11 +1,19 @@
 # Social Computing
 
-Throughout this project a graph of twitch streamers' friends network is constructed and analyzed. Additionally, a comparison of centrality measures is performed, including the `Krackhardt Kite Graph`, `Betweenness Centrality`, and `PageRank`.
+A comparison of `Betweenness Centrality` and `PageRank` centrality measures is performed on a `Krackhardt Kite Graph`. Additionally, a graph of twitch friends network is constructed and analyzed.
 
 ## Outline
 
+- Centrality Measures
 - Twitch Streamers' Friends Network
-- A Comparison of Centrality Measures
+
+## Centrality Measures
+
+- `Kite centrality` measure
+- `Betweenness centrality` measure
+- `Betweenness centrality` measure with `epsilon`
+- `PageRank` centrality measure
+- Personalized `PageRank` centrality measure
 
 ## Twitch Streamers' Friends Network
 
