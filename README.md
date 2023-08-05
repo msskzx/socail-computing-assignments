@@ -1,6 +1,6 @@
 # Social Computing
 
-A comparison of `Betweenness Centrality` and `PageRank` centrality measures is performed on a `Krackhardt Kite Graph`. Additionally, a graph of twitch friends network is constructed and analyzed.
+Implementation of `Betweenness Centrality` and `PageRank` centrality measures is performed on a `Krackhardt Kite Graph`. Additionally, a graph of twitch friends network is constructed and analyzed.
 
 ## Outline
 
