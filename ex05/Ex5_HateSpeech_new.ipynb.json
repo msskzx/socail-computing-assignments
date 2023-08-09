@@ -1,0 +1,1229 @@
+{
+ "cells": [
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "hJAumQyI45Cg"
+   },
+   "source": [
+    "# Social Computing/Social Gaming - Summer 2021\n",
+    "# Exercise Sheet 5 - Hate Speech\n",
+    "Online hate speech is a large scale phenomenon that gained more and more traction in modern society in recent years. Violence attributed to online hate speech has increased worldwide. The same technology that allows social media to galvanize activist movements and NGOs can be used by hate/crime groups seeking to organize and recruit. It also allows conspiration theorists to reach audiences far broader than their core community. It is time – now more than ever –  to put systems in place that make sure social media is not used as a tool to conduct criminal activities. Fortunately, modern technology allows us to do just that.\n",
+    "\n",
+    "In this exercise sheet, we will attempt to accurately and automatically detect two instances of hate speech in Twitter: sexism and racism. The first step in this process will be to prepare the data before it is fed to the model. We do this with the help of the Universal Sentence Encoder, which is explained in more detail later. Additionally, we also need to encode the labels and split the data.\n",
+    "\n",
+    "We then take two different approaches in classifying the data. In other words, we will create, train, evaluate and compare two models. One of them is purely based on text (the Base Model) and the other also takes the social context of the users into account (the Social Model)."
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "3oiBPS0r45Co"
+   },
+   "source": [
+    "## Why Twitter?\n",
+    "Hate crimes are communicative acts, often provoked by events that incite retribution in a targeted group. The continued growth of online social networks and micro-blogging Web services, such as Twitter, enable an extensive and near real-time data source through which the analysis of hateful and antagonistic responses to “trigger” events can be undertaken. Such data affords researchers with the possibility to measure the online social mood and emotion following large-scale, disruptive, and emotive events. Twitter is a defensible and logical source of data for such analysis given that users of social media are more likely to express emotional content due to deindividuation (anonymity, lack of self-awareness in groups, disinhibition) [1]."
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "UhxfaKOZfEBN"
+   },
+   "source": [
+    "## Task 5.0: The Data\n",
+    "For this, we have picked the dataset of Waseem and Hovy [2], in a slightly modified version. The collection originally contained 16,914 labeled tweets, however some of them are not accessible via Twitter API anymore. As a consequence, the dataset now contains 16,849 tweets divided in the following categories: 3,378 *sexism*, 1,970 *racism* and 11,501 *neither*."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "Bnz1j9RsBjiu"
+   },
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import numpy as np"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "6LnDiJ1UnYs9"
+   },
+   "outputs": [],
+   "source": [
+    "# Reads the data set from a .csv file\n",
+    "data = pd.read_csv('tweets.csv', low_memory=False)\n",
+    "data = data.astype(str)\n",
+    "\n",
+    "# This drop operation is necessary because of an inconsistency in the dataset\n",
+    "data = data.drop([3343, 3344])\n",
+    "data = data[['text', 'label']]\n",
+    "\n",
+    "# We need to do a unique and precise reordering to match with graph information later on\n",
+    "unique_tweets, indices = np.unique(data['text'].to_numpy(), return_index=True)\n",
+    "ordered_labels = data['label'].to_numpy()[indices]\n",
+    "data = pd.DataFrame(np.stack((unique_tweets, ordered_labels), axis=1), columns=['text', 'label'])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "q_ztw1QebAK0",
+    "outputId": "ce3a10af-c304-4366-d070-1f1c4d40865c"
+   },
+   "outputs": [],
+   "source": [
+    "# See the summary of the dataset's content\n",
+    "\n",
+    "print(\"TOTAL TWEETS: {}, RACIST: {}, SEXIST: {}, NEITHER: {}\".\\\n",
+    "      format(len(data), len(data[data[\"label\"] == 'racism']), len(data[data[\"label\"] == 'sexism']), len(data[data['label'] == 'none'])))"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "PgCD_Y9o45Cu"
+   },
+   "source": [
+    "## Task 5.1: Preprocessing"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "0Xta8UAMEe0E"
+   },
+   "source": [
+    "### a) Encode the labels\n",
+    "In order for [PyTorch](https://pytorch.org) to work with the labels, they need to have a specific format. Strings need to be replaced by numbers with an according mapping.\n",
+    "\n",
+    "Map the labels from the `label_mapping = ['sexism' 'none' 'racism']` to a numeric vector."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "P849Lj_K520h"
+   },
+   "outputs": [],
+   "source": [
+    "from sklearn.preprocessing import LabelBinarizer"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "I4VAbuqeEXok",
+    "outputId": "9cc4eb3b-7bd3-42d5-b2e0-31d3a98278c9"
+   },
+   "outputs": [],
+   "source": [
+    "# Extract labels from dataset\n",
+    "\n",
+    "labels = np.array(data[\"label\"].tolist())\n",
+    "\n",
+    "# TODO: Encode labels as binary One Hot vectors\n",
+    "# Hint: First map the labels to integer then binarize them\n",
+    "\n",
+    "# Mapping labels to integer\n",
+    "factorized_labels = ###\n",
+    "labels = ###\n",
+    "label_mapping = ###\n",
+    "\n",
+    "# Shows the actual shape of the labels\n",
+    "print(labels.shape)\n",
+    "print(label_mapping)"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "TYQoBAAPbAK1"
+   },
+   "source": [
+    "### b) Universal Sentence Encoder\n",
+    "Google's Universal Sentence Encoder ([USE](https://tfhub.dev/google/universal-sentence-encoder/4) [4]) is a convenient way to map any type of sentence to a 512-dimensional vector. In these 512-dimensional vectors semantic meaning is encoded."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "oYeA9OwTbAK1"
+   },
+   "outputs": [],
+   "source": [
+    "import tensorflow_hub as hub\n",
+    "\n",
+    "# Run this code block only once as the download will take some time and embedding is very memory expensive!\n",
+    "embed = hub.load(\"https://tfhub.dev/google/universal-sentence-encoder/4\")"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "WymD6U7fbAK1"
+   },
+   "source": [
+    "In this task you are suppossed to get a feeling for this type of embedding. Find a pair of sentences that are similar in their meaning but not syntactically. After that, think of two semantically very different sentences.\n",
+    "Obtain the values for them and compare them."
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "-dg6flX4bAK1"
+   },
+   "source": [
+    "**TODO: Write your observations here**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "IsVjvYLobAK2"
+   },
+   "outputs": [],
+   "source": [
+    "# Try out USE here\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "9d_j-DwjbAK2"
+   },
+   "outputs": [],
+   "source": [
+    "# TODO: Now encode our dataset's tweets\n",
+    "\n",
+    "encoded_tweets = ###"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "k-RWP1FAbAK2"
+   },
+   "source": [
+    "## Task 5.2: Base Model"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "nR2HytxsbAK2"
+   },
+   "source": [
+    "### a) Base Model creation\n",
+    "In this code we create our base model and train it afterwards using the PyTorch library. We use a simple Neural Network to build this model. You can read about Neural Networks here in case you are not familiar with them.\n",
+    "You can get a basic intuition for Neural Networks [here](https://medium.com/@shaistha24/basic-concepts-you-should-know-before-starting-with-the-neural-networks-nn-3-6db79028e56d) [5].\n",
+    "\n",
+    "For the base model we have our 512 dimensional input layer. Then we have a fully connected layer with 100 nodes and with a dropout rate of 0.5 is added. For now, you do not need to know what dropout is. After the dropout, another fully connected layer with 50 nodes is added and we once again add a 0.5 dropout rate.\n",
+    "Our output layer has 3 nodes: One for \"sexism\", \"none\" and \"racism\". The computed values for these last 3 nodes correspond to the probability of belonging to either one of our categories."
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "x32XCE3RbAK2"
+   },
+   "source": [
+    "![title](img/base_model.png)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "zngyVOwzdv6l"
+   },
+   "outputs": [],
+   "source": [
+    "import torch\n",
+    "import torch.nn as nn\n",
+    "\n",
+    "BATCH_SIZE = 32\n",
+    "ENCODING_DIM = 512\n",
+    "\n",
+    "class MyModel(nn.Module):\n",
+    "    def __init__(self):\n",
+    "        super(MyModel, self).__init__()\n",
+    "        self.fc1 = nn.Linear(ENCODING_DIM, 100)\n",
+    "        self.dropout1 = nn.Dropout(0.5)\n",
+    "        self.fc2 = nn.Linear(100, 50)\n",
+    "        self.dropout2 = nn.Dropout(0.5)\n",
+    "        self.output = nn.Linear(50, 3)\n",
+    "\n",
+    "    def forward(self, x):\n",
+    "        x = nn.ReLU()(self.fc1(x))\n",
+    "        x = self.dropout1(x)\n",
+    "        x = nn.ReLU()(self.fc2(x))\n",
+    "        x = self.dropout2(x)\n",
+    "        x = self.output(x)\n",
+    "        return x\n",
+    "\n",
+    "model = MyModel()\n",
+    "\n",
+    "# Define the loss and optimizer with according parameters\n",
+    "\n",
+    "# Check the internet to unterstand what impact the learning rate (lr) has!\n",
+    "\n",
+    "criterion = ###\n",
+    "optimizer = ###\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "oHO6sHjr3rMv",
+    "outputId": "42912f76-3421-4bb7-808a-6b4ada4c605b"
+   },
+   "outputs": [],
+   "source": [
+    "from torchsummary import summary\n",
+    "summary(model, input_size = (0,512), batch_size = 32, device='cpu')"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "3y-JP2SL45Cy"
+   },
+   "source": [
+    "### b) Train-Test split for Base Model\n",
+    "Splitting our labeled data into a train test and validation set is a common practice.\n",
+    "* Train set: This set is used to train our model on. The model will try to learn from it.\n",
+    "* Validation set: This set is used to choose hyper parameters. Since creating good models requires to find the right parameters (e.g. what kind of activation function, how many epochs etc.) this set is used to maximize the performance of a model for a fixed choice of parameters.\n",
+    "* Test set: This set is used to evaluate our final model on. After the model has been trained and a final decision for hyper parameters has been made, the model will be evaluated on this set only. No more parameters should be changed after that.\n",
+    "\n",
+    "This rather strange seeming approach helps to identify models that actually generalize well and not just perform very good because we adapted the parameters to maximize the performance on one particular set.\n",
+    "\n",
+    "We will use 60% of our dataset to train our model (the train set) and the remaining 20% to evaluate our model (the test set)."
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "PfkUVBhIIZfd"
+   },
+   "source": [
+    "**Hint:** The sklearn library offers a function that could help you out with this task."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "SXW6xZoH45Cz",
+    "outputId": "d141039e-f7b0-4aa7-fa80-b1a9d9a856ae"
+   },
+   "outputs": [],
+   "source": [
+    "from sklearn.model_selection import train_test_split\n",
+    "\n",
+    "# TODO: Split tweets and labels in Train/Test/Validation 60/20/20\n",
+    "\n",
+    "X_train, X_test, y_train, y_test = ###\n",
+    "X_val, X_test, y_val, y_test = ###\n",
+    "\n",
+    "print(\"Training data shape: {}, Labels shape: {}\".format(X_train.shape, y_train.shape))\n",
+    "print(\"Test data shape: {}, Labels shape: {}\".format(X_test.shape, y_test.shape))\n",
+    "print(\"Validation data shape: {}, Labels shape: {}\".format(X_val.shape, y_val.shape))"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "cbMJFUqg5Xg7"
+   },
+   "source": [
+    "In order to feed the data into the model, we must create Dataset objects for it, allowing the creation of Dataloaders. The Dataset retrieves both the features and labels of the data. While training a model, we want to feed the data in batches and reshuffle it at every epoch to reduce model overfitting. Dataloaders offer an API to do that process."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "qCp0TtD3qr8J"
+   },
+   "outputs": [],
+   "source": [
+    "import torch\n",
+    "from torch.utils.data import Dataset, DataLoader\n",
+    "from torchvision import transforms\n",
+    "\n",
+    "# TODO: Create a CustomDataset class for our Tweet data\n",
+    "\n",
+    "# Custom Dataset class\n",
+    "class CustomDataset(Dataset):\n",
+    "    def __init__(self, encodings, labels):\n",
+    "        ###\n",
+    "\n",
+    "    def __len__(self):\n",
+    "        ###\n",
+    "\n",
+    "    def __getitem__(self, idx):\n",
+    "        ###\n",
+    "        return x, y\n",
+    "\n",
+    "# Create the Datasets\n",
+    "train_dataset = ###\n",
+    "val_dataset = ###\n",
+    "test_dataset = ###\n",
+    "\n",
+    "# DataLoader for batching and parallel data loading\n",
+    "train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)\n",
+    "val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)\n",
+    "test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)\n"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "DJZFPf_WwGSO"
+   },
+   "source": [
+    "### c) Train the Base Model\n",
+    "\n",
+    "**1.** Train the model."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "bI2QIPUGexBa",
+    "outputId": "ce6f7b2d-0634-4695-c21e-b38bb9b19093"
+   },
+   "outputs": [],
+   "source": [
+    "num_epochs = 20\n",
+    "\n",
+    "train_loss_history = []\n",
+    "val_loss_history = []\n",
+    "val_accuracy_history = []\n",
+    "\n",
+    "for epoch in range(num_epochs):\n",
+    "    train_loss = 0\n",
+    "    train_steps = 0\n",
+    "\n",
+    "    val_loss = 0\n",
+    "    val_acc = 0\n",
+    "    val_steps = 0\n",
+    "\n",
+    "    model.train()\n",
+    "    for inputs, labels in train_loader:\n",
+    "        optimizer.zero_grad()\n",
+    "        outputs = model(inputs)\n",
+    "        loss = criterion(outputs, labels)\n",
+    "\n",
+    "        loss.backward()\n",
+    "        optimizer.step()\n",
+    "        train_loss += loss.item()\n",
+    "        train_steps += 1\n",
+    "\n",
+    "    model.eval()\n",
+    "    with torch.no_grad():\n",
+    "      for inputs, labels in val_loader:\n",
+    "        outputs = model(inputs)\n",
+    "\n",
+    "        loss = criterion(outputs, labels)\n",
+    "        val_loss += loss.item()\n",
+    "\n",
+    "        # Calculate validation accuracy\n",
+    "        _, val_labels = torch.max(outputs, dim=1)\n",
+    "        val_acc += (val_labels == labels).sum().item() / labels.size(0)\n",
+    "\n",
+    "        val_steps += 1\n",
+    "\n",
+    "    train_loss_history.append(train_loss/train_steps)\n",
+    "    val_loss_history.append(val_loss/val_steps)\n",
+    "    val_accuracy_history.append(val_acc/val_steps)\n",
+    "    print(f'Epoch {epoch+1}/{num_epochs}')\n",
+    "    print(f'Training loss={train_loss/train_steps}, validation loss={val_loss/val_steps}, validation accuracy={val_acc/val_steps}')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 407
+    },
+    "id": "fBzJMWw0xnuj",
+    "outputId": "57ee30e3-1ba4-4f13-8513-120995eef6dc"
+   },
+   "outputs": [],
+   "source": [
+    "from matplotlib import pyplot as plt\n",
+    "\n",
+    "plt.figure(figsize=(10, 4))\n",
+    "\n",
+    "# Plot training and validation loss\n",
+    "plt.subplot(1, 2, 1)\n",
+    "plt.plot(train_loss_history, label='Train Loss')\n",
+    "plt.plot(val_loss_history, label='Validation Loss')\n",
+    "plt.title('Model Loss')\n",
+    "plt.xlabel('Epoch')\n",
+    "plt.ylabel('Loss')\n",
+    "plt.legend()\n",
+    "\n",
+    "# Plot validation categorical accuracy\n",
+    "plt.subplot(1, 2, 2)\n",
+    "plt.plot(val_accuracy_history, label='Validation Categorical Accuracy')\n",
+    "plt.title('Validation Categorical Accuracy')\n",
+    "plt.xlabel('Epoch')\n",
+    "plt.ylabel('Accuracy')\n",
+    "plt.legend()\n",
+    "\n",
+    "plt.tight_layout()\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "V0lj4SWYbAK4"
+   },
+   "source": [
+    "**2.** After you have looked at the graph, what do you think is an appropriate amount of `epochs`? Briefly explain at which amount of epochs the model seems to be underfitting or overfitting and how this depends on the learning rate?"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "GR9afmjh57P1"
+   },
+   "source": [
+    "**TODO: Write your observations here**"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "if8yjwQNwy_y"
+   },
+   "source": [
+    "### d) Evaluate the Base Model\n",
+    "\n",
+    "The F1 score is a universal measurement of a test's accuracy. It is calculated as the harmonic mean of *precision* and *recall*.\n",
+    "\n",
+    "- **precision** refers to the number of true positives divided by the number of all positives\n",
+    "- **recall** refers to the number of true positives divided by the number of relevant elements\n",
+    "\n",
+    "\n",
+    "$$F_{1} = \\frac{2}{recall^{-1} + precision^{-1}} = \\frac{tp}{tp+\\frac{1}{2}(fp+fn)}$$\n",
+    "\n",
+    "where\n",
+    "*   tp = true positives\n",
+    "*   fp = false positives\n",
+    "*   fn = false negatives\n",
+    "\n",
+    "**1.** Why would we prefer the F1 Score over only the precision?\n",
+    "\n",
+    "**2.** Evaluate the text model with an F1 score."
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "4hRZ2e1DbAK4"
+   },
+   "source": [
+    "**TODO 1: Write your explanation here**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "Q4OoPj1zw4kQ"
+   },
+   "outputs": [],
+   "source": [
+    "#from src.evaluation import f1_score_overall\n",
+    "from evaluation import f1_score_overall"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "hGsIDzD74VCg"
+   },
+   "outputs": [],
+   "source": [
+    "# Predicting the labels from the test set\n",
+    "with torch.no_grad():\n",
+    "    y_pred = model(torch.tensor(test_dataset.encodings))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "dQkYnnTNw4au",
+    "outputId": "e5b78ce0-6817-488b-d7ab-8dfec7445ad2"
+   },
+   "outputs": [],
+   "source": [
+    "# TODO 2: Evaluate text model\n",
+    "# Hint: You can lookup the evaluation.py in the src folder for documentation\n",
+    "\n",
+    "f1_score_overall(y_test, y_pred, label_mapping=###)"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "xvegXhlxuUCN"
+   },
+   "source": [
+    "## Task 5.3: Preprocessing for Social Model\n",
+    "Now that we have evaluated our base model we can try to enhance it by using some sort of a social context. To do so, we are using our base model's prediction to compute an average hate score for each of the followers of an author. This means that for each author we take all his follower's tweets and predict the label. We then take the average of each prediction which results in our average hate score.\n",
+    "\n",
+    "For each tweet we then not only feed in the tweet itself, but also the hate score."
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "D4kmhJJT9Kpz"
+   },
+   "source": [
+    "### Load adjacency matrix for users"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "w0YaL7CZJqpM"
+   },
+   "source": [
+    "In order to create our social model, we first need to load the adjacency matrix. This matrix represents the follower network between all users that have written the 16849 tweets (crawled by Linda Jahn [6]). You can check the `extend_data.ipynb` file to find out how the adjacency matrix was created.\n",
+    "\n",
+    "The 16849 tweets were written by 2031 distinct users. This results in a 2031x2031 matrix."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "vXvkZYb_JXkg"
+   },
+   "outputs": [],
+   "source": [
+    "# Load users adjacency matrix\n",
+    "users_adjacency_matrix = np.load(\"pickle_files/users_data/users_adjacency_matrix.npy\")"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "tHICY__D45Cp"
+   },
+   "source": [
+    "### a) Graph visualization & manipulation\n",
+    "Now we are going to plot the previously loaded adjacency matrix. Since we are going to feed the matrix to the Neural Network later, and because the user network is just a tiny subset of the whole Twitter network it is important to check if the network contains any useful information.\n",
+    "\n",
+    "\n",
+    "**1.** Plot the graph corresponding to the given adjacency matrix.\n",
+    "**Note:** For better visualization, the nodes are color-coded based on their degree."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "pfuRf30ommf7"
+   },
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "import networkx as nx\n",
+    "from matplotlib import pyplot as plt"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 1000
+    },
+    "id": "rSv96Rqt45Cq",
+    "outputId": "98a5b0e3-555e-4c95-c9c8-6eb6a06d93ad",
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "def show_graph(users_adjacency_matrix):\n",
+    "\n",
+    "    # TODO 1:\n",
+    "\n",
+    "    ###\n",
+    "    \n",
+    "    graph.add_edges_from(edges)\n",
+    "\n",
+    "\n",
+    "    print(\"Total number of nodes:\", nx.number_of_nodes(graph))\n",
+    "\n",
+    "    from matplotlib.pyplot import figure\n",
+    "    figure(num=None, figsize=(64, 50), dpi=100)\n",
+    "    nx.draw(graph,\n",
+    "            node_size=300,\n",
+    "            node_color=range(nx.number_of_nodes(graph)),\n",
+    "            cmap=plt.cm.Reds,\n",
+    "            pos=nx.spring_layout(graph)\n",
+    "           )\n",
+    "    plt.show()\n",
+    "\n",
+    "\n",
+    "show_graph(users_adjacency_matrix)"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "j2DJp3GGkzz3"
+   },
+   "source": [
+    "**2.** Briefly describe the graph. How many communities do you think it depicts?"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "xEIoD_U6Tr2u"
+   },
+   "source": [
+    "**TODO 2: Write your observations here**"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "8F9-nJc8k8JI"
+   },
+   "source": [
+    "**3.** Now let us try to actually calculate the number of communities within this graph. First, get rid of the uninteresting nodes that have zero or very few edges and just inspect the \"core\" graph. Expand on the code that you have written in the exercise above.\n",
+    "**Hint**: You can do this by excluding all nodes with an `nx.eigenvector_centrality()` lower than $10^{-8}$."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 1000
+    },
+    "id": "sP3rrJEok-2z",
+    "outputId": "488d5894-7526-4c28-a4d5-e23ec8423283"
+   },
+   "outputs": [],
+   "source": [
+    "def show_graph_core(users_adjacency_matrix):\n",
+    "\n",
+    "    # TODO 3:\n",
+    "\n",
+    "    ###\n",
+    "    \n",
+    "    graph.add_edges_from(edges)\n",
+    "\n",
+    "    print(\"Total number of nodes:\", nx.number_of_nodes(graph))\n",
+    "\n",
+    "    ###\n",
+    "\n",
+    "    print(\"Total number of significant nodes:\", nx.number_of_nodes(graph))\n",
+    "\n",
+    "    from matplotlib.pyplot import figure\n",
+    "    figure(num=None, figsize=(64, 50), dpi=100)\n",
+    "    nx.draw(graph,\n",
+    "            node_size=1000,\n",
+    "            node_color=range(nx.number_of_nodes(graph)),\n",
+    "            cmap=plt.cm.Reds,\n",
+    "            pos=nx.spring_layout(graph)\n",
+    "           )\n",
+    "    plt.show()\n",
+    "\n",
+    "\n",
+    "show_graph_core(users_adjacency_matrix)"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "yxIMjFoImCFW"
+   },
+   "source": [
+    "**4.** Do you think the social context could further improve our hate speech detection model? Find at least 2 pros and 2 cons."
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "64zx0uLcbAK7"
+   },
+   "source": [
+    "**TODO 4: Write your observations here**"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "m67eUdbgbAK8"
+   },
+   "source": [
+    "### b) Employment of our Base Model to predict the hatefulness of an author's followers\n",
+    "\n",
+    "Now that we have a trained model, we can use it to predict the hatefulness for any tweet. Therefore, we can use it to predict an average hate score for each follower of an author. This means that we predict the label for each tweet of an author's follower and then compute an average across all of these predictions.\n",
+    "\n",
+    "**1.** Predict all encoded tweets with the Base Model"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "OyCKpMrNbAK8"
+   },
+   "outputs": [],
+   "source": [
+    "# TODO 1:\n",
+    "\n",
+    "###"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "j9Vun92DbAK8"
+   },
+   "source": [
+    "In the following code cell we load the authorship numpy array. It contains the author ID of each tweet."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "3myAb7_jIZKX"
+   },
+   "outputs": [],
+   "source": [
+    "# Loads authorship index\n",
+    "authors_idx = np.load(\"pickle_files/users_data/authorship.npy\")\n",
+    "authors_idx = np.reshape(authors_idx, newshape=(-1, 1))"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "mVnWuelvbAK8"
+   },
+   "source": [
+    "**2.** Now for every tweet of our dataset we need to compute its authors hate score. Therefore:\n",
+    " * First define a function `get_all_followers` that return all followers for a given user.\n",
+    " * Then create a list `his_followers` that contains all followers for each user.\n",
+    " * Now assign the hate predictions for each of all the followers tweets.\n",
+    " * Finally in `user_avg_score` compute the hate score for each user by averaging out all his followers' tweets' hate scores. If there are no followers' tweets, assign our pre-computed average values `default_hate_score`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "zZUaBR2lbAK8"
+   },
+   "outputs": [],
+   "source": [
+    "default_hate_score = np.array([0.19446494, 0.75084399, 0.0546911])\n",
+    "\n",
+    "# TODO 2:\n",
+    "\n",
+    "###"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "9guRGbf8bAK8"
+   },
+   "outputs": [],
+   "source": [
+    "# Put authors' hate scores in the order of the tweets\n",
+    "tweets_author_hate_score = list((map(lambda x: user_avg_score[int(x)], authors_idx)))\n",
+    "\n",
+    "tweets_author_hate_score = np.array(tweets_author_hate_score)"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "uj6T-8D9bAK8"
+   },
+   "source": [
+    "## Task 5.4: Social Model\n",
+    "\n",
+    "Now that we have our social context prepared, we can build and train our Social Model using that information."
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "yFUY_7bXbAK9"
+   },
+   "source": [
+    "### a) Social Model creation\n",
+    "\n",
+    "With our social context we have 2 separate networks:\n",
+    "* Our text network that processes the tweet (the same as the base model from before)\n",
+    "* Our hate score network that basically decides how important the average hate score for the classification is\n",
+    "\n",
+    "Our 2 separate networks are concatenated and one last hidden layer with 100 nodes is added."
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "j389MzycbAK9"
+   },
+   "source": [
+    "![title](img/enhanced_model.png)"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "g8VXwJ75bAK9"
+   },
+   "source": [
+    "Now define our new neural network `social_model` according to the graphic above. You can lookup most of the syntax in exercise ***5.2 a)***."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "L4URjY0TLQxW"
+   },
+   "outputs": [],
+   "source": [
+    "# TODO: Define the social model\n",
+    "\n",
+    "###\n",
+    "\n",
+    "# Create an instance of the social model\n",
+    "encoding_dim = # Specify the encoding dimension\n",
+    "social_model = SocialModel(encoding_dim)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "u1nUh5w5O4Bz"
+   },
+   "outputs": [],
+   "source": [
+    "criterion = nn.CrossEntropyLoss()\n",
+    "optimizer = torch.optim.Adam(social_model.parameters(), lr=0.0005)"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "PNaZ21p_bAK9"
+   },
+   "source": [
+    "### b) Train-Test split for Social Model\n",
+    "Now split the data in Train/Val/Test 60/20/20 as seen in the Base Model. This time you have to create an additional set for the Hate Score."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "tu9F4O52bAK9",
+    "outputId": "966be4c7-af4f-43d6-8050-31af59cc7359"
+   },
+   "outputs": [],
+   "source": [
+    "# TODO:\n",
+    "labels = factorized_labels[0]\n",
+    "\n",
+    "###\n",
+    "\n",
+    "print(\"Training data shape: {}, Labels shape: {}, Hate Score shape: {}\".format(X_train.shape, y_train.shape, a_train.shape))\n",
+    "print(\"Test data shape: {}, Labels shape: {}, Hate Score shape: {}\".format(X_test.shape, y_test.shape, a_test.shape))\n",
+    "print(\"Validation data shape: {}, Labels shape: {}, Hate Score shape: {}\".format(X_val.shape, y_val.shape, a_val.shape))"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "JlE3px-gPYQx"
+   },
+   "source": [
+    "Once again we need to create adequate Datasets and Dataloaders."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "QFioOyu6PUju"
+   },
+   "outputs": [],
+   "source": [
+    "import torch\n",
+    "from torch.utils.data import Dataset, DataLoader\n",
+    "from torchvision import transforms\n",
+    "\n",
+    "# TODO: Create a CustomDataset class for our Tweet data\n",
+    "\n",
+    "###\n",
+    "\n",
+    "# Create the Datasets\n",
+    "train_dataset = ###\n",
+    "val_dataset = ###\n",
+    "test_dataset = ###\n",
+    "\n",
+    "# DataLoader for batching and parallel data loading\n",
+    "train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)\n",
+    "val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)\n",
+    "test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "i3IKfEb3bAK9"
+   },
+   "source": [
+    "### c) Train and Evaluate the Enhanced Model\n",
+    "Once again, train and evaluate the model with a F1 Score. Use 20 `epochs` and `batch_size` of 32."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "O0wWvi8jbAK-",
+    "outputId": "110cb687-63c9-4129-c129-911547ac3a2c",
+    "scrolled": false
+   },
+   "outputs": [],
+   "source": [
+    "num_epochs = 20\n",
+    "\n",
+    "train_loss_history = []\n",
+    "val_loss_history = []\n",
+    "val_accuracy_history = []\n",
+    "\n",
+    "for epoch in range(num_epochs):\n",
+    "    train_loss = 0\n",
+    "    train_steps = 0\n",
+    "\n",
+    "    val_loss = 0\n",
+    "    val_acc = 0\n",
+    "    val_steps = 0\n",
+    "\n",
+    "    social_model.train()\n",
+    "    for inputs, hatescore, labels in train_loader:\n",
+    "        optimizer.zero_grad()\n",
+    "        outputs = social_model(inputs, hatescore)\n",
+    "        loss = criterion(outputs, labels)\n",
+    "\n",
+    "        loss.backward()\n",
+    "        optimizer.step()\n",
+    "        train_loss += loss.item()\n",
+    "        train_steps += 1\n",
+    "\n",
+    "    social_model.eval()\n",
+    "    with torch.no_grad():\n",
+    "      for inputs, hatescore, labels in val_loader:\n",
+    "        outputs = social_model(inputs, hatescore)\n",
+    "\n",
+    "        loss = criterion(outputs, labels)\n",
+    "        val_loss += loss.item()\n",
+    "\n",
+    "        # Calculate validation accuracy\n",
+    "        _, val_labels = torch.max(outputs, dim=1)\n",
+    "        val_acc += (val_labels == labels).sum().item() / labels.size(0)\n",
+    "\n",
+    "        val_steps += 1\n",
+    "\n",
+    "    train_loss_history.append(train_loss/train_steps)\n",
+    "    val_loss_history.append(val_loss/val_steps)\n",
+    "    val_accuracy_history.append(val_acc/val_steps)\n",
+    "    print(f'Epoch {epoch+1}/{num_epochs}')\n",
+    "    print(f'Training loss={train_loss/train_steps}, validation loss={val_loss/val_steps}, validation accuracy={val_acc/val_steps}')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "Tjf6CQLObAK-",
+    "outputId": "9c15b6e5-e534-4377-f2b7-15c2ca220f4c"
+   },
+   "outputs": [],
+   "source": [
+    "from src.evaluation import f1_score_overall\n",
+    "\n",
+    "# TODO: Evaluate the model with a F1 Score\n",
+    "\n",
+    "###"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "Brwe8cbSbAK-"
+   },
+   "source": [
+    "## Task 5.5: Discussion and comparison\n",
+    "\n",
+    "* Compare the performances of our two models in your own words\n",
+    "\n",
+    "* Why do you think it improved?\n",
+    "\n",
+    "* Can you think of any other social context to further improve our model?"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "c-VeHwtQbAK-"
+   },
+   "source": [
+    "**TODO: Write your thoughts here**"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "svmyf6kcbAK-"
+   },
+   "source": [
+    "## References\n",
+    "\n",
+    "[1] Festinger, L., Pepitone, A. and Newcomb, T. (1952) *Some Consequences of De-Individuation in a Group.* Journal of Abnormal and Social Psychology, 47, 382-389.\n",
+    "<br>[2] Waseem, Z., & Hovy, D. (2016). *Hateful symbols or hateful people? Predictive features for hate speech detection on Twitter.* In Proceedings of the naacl student research workshop (pp. 88-93).\n",
+    "<br>[3] https://pytorch.org/tutorials/beginner/introyt/modelsyt_tutorial.html\n",
+    "<br>[4] https://pytorch.org/tutorials/beginner/basics/data_tutorial.html\n",
+    "<br>[5] https://pytorch.org/docs/stable/nn.html\n",
+    "<br>[6] Jahn, L. (2020). *Leveraging Social Network Data for Hate Speech Detection.* Master\n",
+    "Thesis, Technical University of Munich, Department of Informatics."
+   ]
+  }
+ ],
+ "metadata": {
+  "accelerator": "GPU",
+  "colab": {
+   "gpuType": "T4",
+   "provenance": []
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.8"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 1
+}
