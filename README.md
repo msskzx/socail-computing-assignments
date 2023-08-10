@@ -4,16 +4,28 @@ Implementation of `Betweenness Centrality` and `PageRank` centrality measures is
 
 ## Outline
 
+- Clustering
 - Centrality Measures
 - Twitch Streamers' Friends Network
 
+## Clustering
+
+- `Louvain` clustering
+- `K-Means` clustering
+- `Gaussian Mixture Model` clustering
+
+![kmeans vs. gmm](/ex03/kmeans_vs_gmm.png)
+<center>K-Means vs. Gaussiam Mixture Model for 2 Gaussian Distributions and one Normal Distribution</center>
+
+
+
 ## Centrality Measures
 
-- `Kite centrality` measure
-- `Betweenness centrality` measure
-- `Betweenness centrality` measure with `epsilon`
+- `Kite centrality`
+- `Betweenness centrality`
+- `Epsilon Betweenness centrality`
 - `PageRank` centrality measure
-- Personalized `PageRank` centrality measure
+- Personalized `PageRank` centrality
 
 ## Twitch Streamers' Friends Network
 
