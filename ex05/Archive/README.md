@@ -1,1 +1,0 @@
-pickle_files, src and img should also be uploaded to moodle.
