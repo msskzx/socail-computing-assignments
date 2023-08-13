@@ -1,12 +1,20 @@
 # Social Computing
 
-Implementation of `Betweenness Centrality` and `PageRank` centrality measures is performed on a `Krackhardt Kite Graph`. Additionally, a graph of twitch friends network is constructed and analyzed.
 
 ## Outline
 
+- Hate Speech Detection
 - Clustering
 - Centrality Measures
 - Twitch Streamers' Friends Network
+
+## Hate Speech Detection
+
+- Tweets: `RACIST`, `SEXIST`, `NEITHER`
+- Data Preprocessing: 
+    - `One Hot Encoding` for labels
+    - `Universal Sentence Encoder` to get text embeddings
+- Fully Connected Neural Network
 
 ## Clustering
 
@@ -15,11 +23,13 @@ Implementation of `Betweenness Centrality` and `PageRank` centrality measures is
 - `Gaussian Mixture Model` clustering
 
 ![kmeans vs. gmm](/ex03/kmeans_vs_gmm.png)
-<center>K-Means vs. Gaussiam Mixture Model for 2 Gaussian Distributions and one Normal Distribution</center>
+<center>Two Gaussian Distributions and one Normal Distribution</center>
 
 
 
 ## Centrality Measures
+
+Implementation of `Betweenness Centrality` and `PageRank` centrality measures is performed on a `Krackhardt Kite Graph`.
 
 - `Kite centrality`
 - `Betweenness centrality`
@@ -29,30 +39,12 @@ Implementation of `Betweenness Centrality` and `PageRank` centrality measures is
 
 ## Twitch Streamers' Friends Network
 
-### Sparse Vector Representation
+A graph of twitch friends network is constructed and analyzed.
 
-- convert dense vector to sparse vector
-
-### Data
-
-#### musae_DE_target.csv
-
-- each vertex represents a Twitch channel and contains multiple
-informations about the channel
-
-#### musae_DE_edges.csv
-
-- edges between the channels/streamers representing their friendship connection
-- Represented by `from` & `to` nodes, but are undirected as Twitch‘s friendship system is undirected
-
-#### TwitchIDList.csv
-
-- streamer‘s names for the used IDs of the dataset
-
-### Data Preprocessing
-
-- filter streamers
-- merge nodes with edges
+- Sparse Vector Representation: convert dense vector to sparse vector
+- Data Preprocessing
+    - filter streamers
+    - merge nodes with edges
 
 ### Graph
 
@@ -66,5 +58,3 @@ informations about the channel
 
 ![spring layout](/ex01/kamada_kawai_layout.png)
 <center>Kamada Kawai Layout</center>
-
-## A Comparison of Centrality Measures
