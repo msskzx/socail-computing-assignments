@@ -3,18 +3,38 @@
 
 ## Outline
 
+- Toxic Speech Classification with BERT and Explanation using SHAP
 - Hate Speech Detection
-- Clustering
+- Graph Clustering
 - Centrality Measures
 - Twitch Streamers' Friends Network
 
-## Hate Speech Detection
+## Toxic Speech Classification with BERT and Explanation using SHAP
 
-- Tweets: `RACIST`, `SEXIST`, `NEITHER`
+![shap sexism](/ex06/shap-sexism.png)
+
+- Tweets labels: `none`, `racism`, `sexism`
 - Data Preprocessing: 
-    - `One Hot Encoding` for labels
+    - `LabelEncoder` for labels
+    - `BertTokenizer` to get text tokens
+    - padding
+    - CustomDataset
+    - Split to `Train/Val/Test` `60/20/20`
+- Model: `DistilBERT`
+- Explanation using `SHAP`
+
+
+## Hate Speech Detection with
+
+![base model](/ex05/img/base_model.png)
+
+- Tweets labels: `RACIST`, `SEXIST`, `NEITHER`
+- Data Preprocessing: 
+    - `LabelEncoder` for labels
     - `Universal Sentence Encoder` to get text embeddings
-- Fully Connected Neural Network
+- Model: Fully Connected Neural Network
+
+![embeddings](/ex05/img/embeddings.png)
 
 ## Clustering
 
@@ -24,7 +44,6 @@
 
 ![kmeans vs. gmm](/ex03/kmeans_vs_gmm.png)
 <center>Two Gaussian Distributions and one Normal Distribution</center>
-
 
 
 ## Centrality Measures
@@ -53,8 +72,3 @@ A graph of twitch friends network is constructed and analyzed.
 
 ![spring layout](/ex01/spring_layout.png)
 <center>Spring Layout</center>
-
-- visualize graph using `Kamada Kawai Layout` which positions nodes using `Kamada-Kawai path-length cost-function`
-
-![spring layout](/ex01/kamada_kawai_layout.png)
-<center>Kamada Kawai Layout</center>
